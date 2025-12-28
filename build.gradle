@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'com.example.sqslib'
-version = '0.1.1-SNAPSHOT'
+version = '0.1.2-SNAPSHOT'
 description = 'Example project for sqs - consumer & producer lib'
 
 java {

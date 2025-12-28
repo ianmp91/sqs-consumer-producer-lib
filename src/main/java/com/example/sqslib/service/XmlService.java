@@ -20,52 +20,60 @@ public class XmlService {
     // Cache para no recrear el contexto cada vez (Mejora de rendimiento crítica)
     private final Map<Class<?>, JAXBContext> contextCache = new ConcurrentHashMap<>();
 
+    private final JAXBContext context;
+
+    public XmlService() throws JAXBException {
+        this.context = JAXBContext.newInstance("com.example.sqslib.iata");
+    }
+
     /**
-     * Convierte un objeto generado por XJC (IATA/AIDX) a String XML.
+     * Convierte cualquier objeto del paquete IATA a XML.
      */
-    public <T> String toXml(T object) {
+    public String toXml(Object object) {
         try {
-            JAXBContext context = getContext(object.getClass());
             Marshaller marshaller = context.createMarshaller();
 
-            // Formatear bonito (true) o compacto para ahorrar bytes en SQS (false)
-            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, false);
-            // Omitir la declaración <?xml ... ?> si prefieres payload limpio
-            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
+            // Configuración para producción (compacto) vs debug
+            // Sugerencia: En PROD usar FALSE para ahorrar costos de transferencia en SQS
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.FALSE);
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE); // Sin <?xml ...?>
 
             StringWriter writer = new StringWriter();
             marshaller.marshal(object, writer);
             return writer.toString();
         } catch (JAXBException e) {
-            throw new RuntimeException("Error serializando objeto IATA a XML", e);
+            throw new RuntimeException("Error serializando objeto IATA a XML: " + object.getClass().getSimpleName(), e);
         }
     }
 
     /**
-     * Convierte un String XML a un objeto Java (IATA/AIDX).
+     * MÉTODO CLAVE PARA MICROSERVICIO (C).
+     * Deserializa sin saber la clase de antemano. JAXB descubre el tipo por el root element.
      */
-    @SuppressWarnings("unchecked")
-    public <T> T fromXml(String xml, Class<T> type) {
+    public Object fromXml(String xml) {
         try {
-            JAXBContext context = getContext(type);
             Unmarshaller unmarshaller = context.createUnmarshaller();
-
             StringReader reader = new StringReader(xml);
-            return (T) unmarshaller.unmarshal(reader);
+
+            // JAXB lee el tag raíz (ej: <IATA_AIDX_FlightLegRQ>) y busca en el ObjectFactory
+            // qué clase corresponde.
+            return unmarshaller.unmarshal(reader);
         } catch (JAXBException e) {
-            throw new RuntimeException("Error deserializando XML a objeto IATA", e);
+            throw new RuntimeException("Error deserializando XML genérico", e);
         }
     }
 
-    // Helper para obtener o crear el contexto (Thread-safe)
-    private JAXBContext getContext(Class<?> type) throws JAXBException {
-        // Usamos computeIfAbsent para crear el contexto solo si no existe en el mapa
-        return contextCache.computeIfAbsent(type, clazz -> {
-            try {
-                return JAXBContext.newInstance(clazz);
-            } catch (JAXBException e) {
-                throw new RuntimeException("No se pudo crear JAXBContext para " + clazz.getName(), e);
-            }
-        });
+    /**
+     * Método opcional si sabes exactamente qué esperas (útil para Microservicio B leyendo respuestas).
+     * Realiza un cast seguro.
+     */
+    public <T> T fromXml(String xml, Class<T> expectedType) {
+        Object result = fromXml(xml);
+        if (expectedType.isInstance(result)) {
+            return expectedType.cast(result);
+        } else {
+            throw new ClassCastException("Se esperaba " + expectedType.getSimpleName() +
+                    " pero el XML contenía " + result.getClass().getSimpleName());
+        }
     }
 }
