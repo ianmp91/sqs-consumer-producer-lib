@@ -72,8 +72,8 @@ public class XmlService {
         if (expectedType.isInstance(result)) {
             return expectedType.cast(result);
         } else {
-            throw new ClassCastException("Se esperaba " + expectedType.getSimpleName() +
-                    " pero el XML contenía " + result.getClass().getSimpleName());
+            throw new ClassCastException("Expected " + expectedType.getSimpleName() +
+                    " but the XML contains " + result.getClass().getSimpleName());
         }
     }
 }
