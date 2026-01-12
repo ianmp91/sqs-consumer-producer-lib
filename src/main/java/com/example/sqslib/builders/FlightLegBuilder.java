@@ -152,16 +152,16 @@ public class FlightLegBuilder {
 		airline.setValue(rq.getFlightLegs().getFirst().getLegIdentifier().getAirline().getValue());
 		airline.setCodeContext(rq.getFlightLegs().getFirst().getLegIdentifier().getAirline().getCodeContext());
 		legId.setAirline(airline);
-		legId.setFlightNumber(metadata.get("flight_number"));
+		legId.setFlightNumber(rq.getFlightLegs().getFirst().getLegIdentifier().getFlightNumber());
 
 		FlightLegIdentifierType.DepartureAirport departureAirport = new FlightLegIdentifierType.DepartureAirport();
-		departureAirport.setValue(metadata.get("departure_airport"));
-		departureAirport.setCodeContext(metadata.get("flight_number"));
+		departureAirport.setValue(rq.getFlightLegs().getFirst().getLegIdentifier().getDepartureAirport().getValue());
+		departureAirport.setCodeContext(rq.getFlightLegs().getFirst().getLegIdentifier().getDepartureAirport().getCodeContext());
 		legId.setDepartureAirport(departureAirport);
 
 		FlightLegIdentifierType.ArrivalAirport arrivalAirport = new FlightLegIdentifierType.ArrivalAirport();
-		arrivalAirport.setValue(metadata.get("arrival_airport"));
-		arrivalAirport.setCodeContext(metadata.get("flight_number"));
+		arrivalAirport.setValue(rq.getFlightLegs().getFirst().getLegIdentifier().getArrivalAirport().getValue());
+		arrivalAirport.setCodeContext(rq.getFlightLegs().getFirst().getLegIdentifier().getDepartureAirport().getCodeContext());
 		legId.setArrivalAirport(arrivalAirport);
 		flightLegType.setLegIdentifier(legId);
 
