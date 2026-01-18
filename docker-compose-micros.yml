@@ -1,4 +1,18 @@
 services:
+  # --- MICROSERVICIO D (ConfigServer) ---
+  micro-consumer-d:
+    container_name: micro-d
+    build:
+      context: ../config-server
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8888
+    ports:
+      - "8888:8888" # IMPORTANTE: Puerto Host 8081 -> Container 8080
+    networks:
+      - app-network
+
   # --- MICROSERVICIO B (Productor/Consumidor) ---
   micro-producer-b:
     container_name: micro-b
@@ -7,7 +21,8 @@ services:
       dockerfile: Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CLOUD_AWS_SQS_ENDPOINT=http://elasticmq:9324
+      - SPRING_CLOUD_AWS_SQS_ENDPOINT=http://elasticmq-sqs:9324
+      - SPRING_CLOUD_CONFIGSERVER_ENDPOINT=http://micro-d:8888
       - SERVER_PORT=8080
     ports:
       - "8080:8080" # Puerto Host 8080 -> Container 8080
@@ -22,10 +37,11 @@ services:
       dockerfile: Dockerfile
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_CLOUD_AWS_SQS_ENDPOINT=http://elasticmq:9324
+      - SPRING_CLOUD_AWS_SQS_ENDPOINT=http://elasticmq-sqs:9324
+      - SPRING_CLOUD_CONFIGSERVER_ENDPOINT=http://micro-d:8888
       - SERVER_PORT=8080
     ports:
-      - "8081:8080" # IMPORTANTE: Puerto Host 8081 -> Container 8080
+      - "8081:8081" # IMPORTANTE: Puerto Host 8081 -> Container 8080
     networks:
       - app-network
 
