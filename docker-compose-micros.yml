@@ -1,7 +1,7 @@
 services:
   # --- MICROSERVICIO D (ConfigServer) ---
-  micro-consumer-d:
-    container_name: micro-d
+  config-server:
+    container_name: config-server
     build:
       context: ../config-server
       dockerfile: Dockerfile
@@ -9,39 +9,52 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - SERVER_PORT=8888
     ports:
-      - "8888:8888" # IMPORTANTE: Puerto Host 8081 -> Container 8080
+      - "8888:8888"
     networks:
       - app-network
+    healthcheck:
+      # Explicación: Bash intenta abrir una conexión TCP a localhost en el puerto 8888.
+      # Si conecta, devuelve true (0). Si falla, devuelve false (1).
+      test: [ "CMD-SHELL", "bash -c '</dev/tcp/localhost/8888'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # --- MICROSERVICIO B (Productor/Consumidor) ---
-  micro-producer-b:
-    container_name: micro-b
+  airlines-b:
+    container_name: airlines-b
     build:
       context: ../sqs-producer-consumer-micro
       dockerfile: Dockerfile
+    depends_on:
+      config-server:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CLOUD_AWS_SQS_ENDPOINT=http://elasticmq-sqs:9324
-      - SPRING_CLOUD_CONFIGSERVER_ENDPOINT=http://micro-d:8888
+      - SPRING_CLOUD_CONFIGSERVER_ENDPOINT=http://config-server:8888
       - SERVER_PORT=8080
     ports:
-      - "8080:8080" # Puerto Host 8080 -> Container 8080
+      - "8080:8080"
     networks:
       - app-network
 
   # --- MICROSERVICIO C (Consumidor/Productor) ---
-  micro-consumer-c:
-    container_name: micro-c
+  airport-c:
+    container_name: airport-c
     build:
       context: ../sqs-consumer-producer-micro
       dockerfile: Dockerfile
+    depends_on:
+      config-server:
+        condition: service_healthy
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_CLOUD_AWS_SQS_ENDPOINT=http://elasticmq-sqs:9324
-      - SPRING_CLOUD_CONFIGSERVER_ENDPOINT=http://micro-d:8888
+      - SPRING_CLOUD_CONFIGSERVER_ENDPOINT=http://config-server:8888
       - SERVER_PORT=8080
     ports:
-      - "8081:8081" # IMPORTANTE: Puerto Host 8081 -> Container 8080
+      - "8081:8081"
     networks:
       - app-network
 
